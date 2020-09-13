@@ -88,8 +88,6 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
                 arguments.put(node.getName(), (ArgumentCommandNode<S, ?>) node);
             }
         }
-
-        children = children.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
     public void findAmbiguities(final AmbiguityConsumer<S> consumer) {

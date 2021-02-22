@@ -156,6 +156,10 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
         return requirement;
     }
 
+    public Predicate<ParseResults<S>> getContextRequirement() {
+        return contextRequirement;
+    }
+
     public abstract String getName();
 
     public abstract String getUsageText();

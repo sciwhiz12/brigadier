@@ -72,7 +72,7 @@ public abstract class ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> {
         return contextRequirement;
     }
 
-  public T redirect(final CommandNode<S> target) {
+    public T redirect(final CommandNode<S> target) {
         return forward(target, null, false);
     }
 

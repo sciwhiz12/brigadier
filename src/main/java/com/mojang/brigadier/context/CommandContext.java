@@ -141,7 +141,11 @@ public class CommandContext<S> {
         return nodes;
     }
 
-    public boolean hasNodes() {
+    public Map<String, ParsedArgument<S, ?>> getArguments() {
+        return arguments;
+    }
+
+  public boolean hasNodes() {
         return !nodes.isEmpty();
     }
 

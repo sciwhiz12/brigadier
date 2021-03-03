@@ -4,6 +4,7 @@
 package com.mojang.brigadier.builder;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.RedirectModifier;
 import com.mojang.brigadier.SingleRedirectModifier;
 import com.mojang.brigadier.tree.CommandNode;
@@ -17,6 +18,7 @@ public abstract class ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> {
     private final RootCommandNode<S> arguments = new RootCommandNode<>();
     private Command<S> command;
     private Predicate<S> requirement = s -> true;
+    private Predicate<ParseResults<S>> contextRequirement = parse -> true;
     private CommandNode<S> target;
     private RedirectModifier<S> modifier = null;
     private boolean forks;
@@ -59,6 +61,15 @@ public abstract class ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> {
 
     public Predicate<S> getRequirement() {
         return requirement;
+    }
+
+    public T requiresWithContext(final Predicate<ParseResults<S>> requirement) {
+        this.contextRequirement = requirement;
+        return getThis();
+    }
+
+    public Predicate<ParseResults<S>> getContextRequirement() {
+        return contextRequirement;
     }
 
     public T redirect(final CommandNode<S> target) {

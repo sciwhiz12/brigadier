@@ -386,19 +386,29 @@ public class CommandDispatcher<S> {
                     final CommandContextBuilder<S> childContext = new CommandContextBuilder<>(this, source, child.getRedirect(), reader.getCursor());
                     final ParseResults<S> parse = parseNodes(child.getRedirect(), reader, childContext);
                     context.withChild(parse.getContext());
-                    return new ParseResults<>(context, parse.getReader(), parse.getExceptions());
+                    final ParseResults<S> redirect = new ParseResults<>(context, parse.getReader(), parse.getExceptions());
+                    if (child.canUse(redirect)) {
+                        return redirect;
+                    }
                 } else {
                     final ParseResults<S> parse = parseNodes(child, reader, context);
+                    if (!child.canUse(parse)) {
+                        continue;
+                    }
                     if (potentials == null) {
                         potentials = new ArrayList<>(1);
                     }
                     potentials.add(parse);
                 }
             } else {
+                final ParseResults<S> parse = new ParseResults<>(context, reader, Collections.emptyMap());
+                if (!child.canUse(parse)) {
+                    continue;
+                }
                 if (potentials == null) {
                     potentials = new ArrayList<>(1);
                 }
-                potentials.add(new ParseResults<>(context, reader, Collections.emptyMap()));
+                potentials.add(parse);
             }
         }
 

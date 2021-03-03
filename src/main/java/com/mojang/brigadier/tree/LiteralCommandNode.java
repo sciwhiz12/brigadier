@@ -4,6 +4,7 @@
 package com.mojang.brigadier.tree;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.RedirectModifier;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -24,6 +25,11 @@ public class LiteralCommandNode<S> extends CommandNode<S> {
 
     public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         super(command, requirement, redirect, modifier, forks);
+        this.literal = literal;
+    }
+
+    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final Predicate<ParseResults<S>> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+        super(command, requirement, contextRequirement, redirect, modifier, forks);
         this.literal = literal;
     }
 

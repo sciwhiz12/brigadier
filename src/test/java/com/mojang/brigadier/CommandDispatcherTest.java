@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.context.CommandContextBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import org.junit.Before;
 import org.junit.Test;
@@ -200,6 +201,16 @@ public class CommandDispatcherTest {
         final ParseResults<Object> parse = subject.parse("foo ", source);
         assertThat(parse.getReader().getRemaining(), equalTo(" "));
         assertThat(parse.getContext().getNodes().size(), is(1));
+    }
+
+    @Test
+    public void testParseChildlessRedirect() throws Exception {
+        final CommandNode<Object> target = subject.register(literal("foo").executes(command));
+        final CommandNode<Object> redirect = subject.register(literal("redirect").redirect(target));
+
+        final ParseResults<Object> parse = subject.parse("redirect", source);
+        assertThat(parse.getContext().getCommand(), equalTo(target.getCommand()));
+        assertThat(parse.getContext().getNodes().get(0).getNode(), equalTo(redirect));
     }
 
     @SuppressWarnings("unchecked")

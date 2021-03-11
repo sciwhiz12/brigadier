@@ -401,6 +401,10 @@ public class CommandDispatcher<S> {
                     potentials.add(parse);
                 }
             } else {
+                final CommandNode<S> redirect = child.getRedirect();
+                if (redirect != null && redirect.getCommand() != null) {
+                    context.withCommand(redirect.getCommand());
+                }
                 final ParseResults<S> parse = new ParseResults<>(context, reader, Collections.emptyMap());
                 if (!child.canUse(parse)) {
                     continue;

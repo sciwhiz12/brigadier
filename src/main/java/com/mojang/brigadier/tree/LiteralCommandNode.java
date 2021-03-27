@@ -50,15 +50,13 @@ public class LiteralCommandNode<S> extends CommandNode<S> {
 
     private int parse(final StringReader reader) {
         final int start = reader.getCursor();
-        if (reader.canRead(literal.length())) {
+        if (literal.regionMatches(0, reader.getString(), start, literal.length())) {
             final int end = start + literal.length();
-            if (reader.getString().substring(start, end).equals(literal)) {
-                reader.setCursor(end);
-                if (!reader.canRead() || reader.peek() == ' ') {
-                    return end;
-                } else {
-                    reader.setCursor(start);
-                }
+            reader.setCursor(end);
+            if (!reader.canRead() || reader.peek() == ' ') {
+                return end;
+            } else {
+                reader.setCursor(start);
             }
         }
         return -1;

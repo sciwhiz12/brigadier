@@ -13,7 +13,6 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -386,15 +385,11 @@ public class CommandDispatcher<S> {
                     final CommandContextBuilder<S> childContext = new CommandContextBuilder<>(this, source, child.getRedirect(), reader.getCursor());
                     final ParseResults<S> parse = parseNodes(child.getRedirect(), reader, childContext);
                     context.withChild(parse.getContext());
-                    final ParseResults<S> redirect = new ParseResults<>(context, parse.getReader(), parse.getExceptions());
-                    if (child.canUse(redirect)) {
-                        return redirect;
+                    if (child.canUse(context)) {
+                        return new ParseResults<>(context, parse.getReader(), parse.getExceptions());
                     }
-                } else {
+                } else if (child.canUse(context)) {
                     final ParseResults<S> parse = parseNodes(child, reader, context);
-                    if (!child.canUse(parse)) {
-                        continue;
-                    }
                     if (potentials == null) {
                         potentials = new ArrayList<>(1);
                     }
@@ -405,10 +400,10 @@ public class CommandDispatcher<S> {
                 if (redirect != null && redirect.getCommand() != null) {
                     context.withCommand(redirect.getCommand());
                 }
-                final ParseResults<S> parse = new ParseResults<>(context, reader, Collections.emptyMap());
-                if (!child.canUse(parse)) {
+                if (!child.canUse(context)) {
                     continue;
                 }
+                final ParseResults<S> parse = new ParseResults<>(context, reader, Collections.emptyMap());
                 if (potentials == null) {
                     potentials = new ArrayList<>(1);
                 }

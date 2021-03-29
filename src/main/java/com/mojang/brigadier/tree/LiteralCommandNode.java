@@ -28,7 +28,7 @@ public class LiteralCommandNode<S> extends CommandNode<S> {
         this.literal = literal;
     }
 
-    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final Predicate<ParseResults<S>> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final Predicate<CommandContextBuilder<S>> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         super(command, requirement, contextRequirement, redirect, modifier, forks);
         this.literal = literal;
     }

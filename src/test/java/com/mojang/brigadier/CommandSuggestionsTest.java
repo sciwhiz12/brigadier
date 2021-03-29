@@ -20,6 +20,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static com.mojang.brigadier.builder.LiteralArgumentBuilder.literal;
 import static com.mojang.brigadier.builder.RequiredArgumentBuilder.argument;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -102,6 +103,15 @@ public class CommandSuggestionsTest {
     }
 
     @Test
+    public void getCompletionSuggestions_rootCommands_impermissible() throws Exception {
+        subject.register(literal("foo").requires(source -> false));
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("", source)).join();
+
+        assertThat(result.getList(), is(empty()));
+    }
+
+    @Test
     public void getCompletionSuggestions_subCommands() throws Exception {
         subject.register(
             literal("parent")
@@ -171,6 +181,19 @@ public class CommandSuggestionsTest {
 
         assertThat(result.getRange(), equalTo(StringRange.between(12, 13)));
         assertThat(result.getList(), equalTo(Lists.newArrayList(new Suggestion(StringRange.between(12, 13), "bar"), new Suggestion(StringRange.between(12, 13), "baz"))));
+    }
+
+    @Test
+    public void getCompletionSuggestions_subCommands_impermissible() throws Exception {
+        subject.register(
+                literal("parent")
+                        .then(literal("foo")
+                                .requires(source -> false))
+        );
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("parent ", source)).join();
+
+        assertThat(result.getList(), is(empty()));
     }
 
     @Test

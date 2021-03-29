@@ -217,9 +217,10 @@ public class CommandDispatcherTest {
 
     @Test
     public void testParseContextImpermissibleLiteral() throws Exception {
-        subject.register(literal("foo").requiresWithContext(context -> {
+        subject.register(literal("foo").requiresWithContext((context, reader) -> {
             assertThat(context.getNodes().size(), is(1));
             assertThat(context.getRange(), equalTo(StringRange.between(0, 3)));
+            assertThat(reader.getCursor(), is(3));
             return false;
         }));
 
@@ -232,10 +233,11 @@ public class CommandDispatcherTest {
     public void testParseContextImpermissibleArgument() throws Exception {
         subject.register(literal("foo")
             .then(argument("bar", integer())
-                .requiresWithContext(context -> {
+                .requiresWithContext((context, reader) -> {
                     assertThat(context.getNodes().size(), is(2));
                     assertThat(context.getArguments().size(), is(1));
                     assertThat(context.getRange(), equalTo(StringRange.between(0, 5)));
+                    assertThat(reader.getCursor(), is(5));
                     return false;
                 })
             )

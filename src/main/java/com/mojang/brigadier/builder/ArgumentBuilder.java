@@ -4,6 +4,7 @@
 package com.mojang.brigadier.builder;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.ImmutableStringReader;
 import com.mojang.brigadier.RedirectModifier;
 import com.mojang.brigadier.SingleRedirectModifier;
 import com.mojang.brigadier.context.CommandContextBuilder;
@@ -12,13 +13,14 @@ import com.mojang.brigadier.tree.RootCommandNode;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public abstract class ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> {
     private final RootCommandNode<S> arguments = new RootCommandNode<>();
     private Command<S> command;
     private Predicate<S> requirement = s -> true;
-    private Predicate<CommandContextBuilder<S>> contextRequirement = context -> true;
+    private BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement = (context, reader) -> true;
     private CommandNode<S> target;
     private RedirectModifier<S> modifier = null;
     private boolean forks;
@@ -63,12 +65,12 @@ public abstract class ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> {
         return requirement;
     }
 
-    public T requiresWithContext(final Predicate<CommandContextBuilder<S>> requirement) {
+    public T requiresWithContext(final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> requirement) {
         this.contextRequirement = requirement;
         return getThis();
     }
 
-    public Predicate<CommandContextBuilder<S>> getContextRequirement() {
+    public BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> getContextRequirement() {
         return contextRequirement;
     }
 

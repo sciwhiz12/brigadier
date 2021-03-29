@@ -129,9 +129,10 @@ public class CommandSuggestionsTest {
     public void getCompletionSuggestions_rootCommands_impermissibleContext() throws Exception {
         subject.register(
             literal("foo")
-                .requiresWithContext(context -> {
+                .requiresWithContext((context, reader) -> {
                     assertThat(context.getRange(), equalTo(StringRange.at(0)));
                     assertThat(context.getNodes().size(), is(1));
+                    assertThat(reader.getCursor(), is(0));
                     return false;
                 })
         );
@@ -249,9 +250,10 @@ public class CommandSuggestionsTest {
         subject.register(
             literal("parent")
                 .then(literal("foo")
-                    .requiresWithContext(context -> {
+                    .requiresWithContext((context, reader) -> {
                         assertThat(context.getRange(), equalTo(StringRange.between(0, 7)));
                         assertThat(context.getNodes().size(), is(2));
+                        assertThat(reader.getCursor(), is(7));
                         return false;
                     })
                 )
@@ -269,12 +271,13 @@ public class CommandSuggestionsTest {
         subject.register(
             literal("parent")
                 .then(argument("foo", integer())
-                    .requiresWithContext(context -> {
+                    .requiresWithContext((context, reader) -> {
                         if (checkCalls.getAndIncrement() == 0) {
                             return false; // called by #parse with arguments
                         }
                         assertThat(context.getArguments().isEmpty(), is(true));
                         assertThat(context.getRange(), equalTo(StringRange.between(0, 7)));
+                        assertThat(reader.getCursor(), is(7));
                         return false;
                     })
                     .suggests((context, builder) -> {

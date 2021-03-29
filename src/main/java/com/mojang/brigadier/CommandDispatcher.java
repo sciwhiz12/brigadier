@@ -386,10 +386,10 @@ public class CommandDispatcher<S> {
                     final CommandContextBuilder<S> childContext = new CommandContextBuilder<>(this, source, child.getRedirect(), reader.getCursor());
                     final ParseResults<S> parse = parseNodes(child.getRedirect(), reader, childContext);
                     context.withChild(parse.getContext());
-                    if (child.canUse(context)) {
+                    if (child.canUse(context, parse.getReader())) {
                         return new ParseResults<>(context, parse.getReader(), parse.getExceptions());
                     }
-                } else if (child.canUse(context)) {
+                } else if (child.canUse(context, reader)) {
                     final ParseResults<S> parse = parseNodes(child, reader, context);
                     if (potentials == null) {
                         potentials = new ArrayList<>(1);
@@ -401,7 +401,7 @@ public class CommandDispatcher<S> {
                 if (redirect != null && redirect.getCommand() != null) {
                     context.withCommand(redirect.getCommand());
                 }
-                if (!child.canUse(context)) {
+                if (!child.canUse(context, reader)) {
                     continue;
                 }
                 final ParseResults<S> parse = new ParseResults<>(context, reader, Collections.emptyMap());
@@ -608,7 +608,9 @@ public class CommandDispatcher<S> {
             }
             // We don't know the real range of the parsed contents; default to an empty range.
             final CommandContextBuilder<S> nodeContext = context.copy().withNode(node, StringRange.at(start));
-            if (!node.canUse(nodeContext)) {
+            final StringReader reader = new StringReader(truncatedInput);
+            reader.setCursor(start);
+            if (!node.canUse(nodeContext, reader)) {
                 futures[i++] = future;
                 continue;
             }

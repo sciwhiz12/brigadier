@@ -6,6 +6,7 @@ package com.mojang.brigadier;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.context.CommandContextBuilder;
+import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -18,6 +19,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.builder.LiteralArgumentBuilder.literal;
 import static com.mojang.brigadier.builder.RequiredArgumentBuilder.argument;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -211,6 +213,37 @@ public class CommandDispatcherTest {
         final ParseResults<Object> parse = subject.parse("redirect", source);
         assertThat(parse.getContext().getCommand(), equalTo(target.getCommand()));
         assertThat(parse.getContext().getNodes().get(0).getNode(), equalTo(redirect));
+    }
+
+    @Test
+    public void testParseContextImpermissibleLiteral() throws Exception {
+        subject.register(literal("foo").requiresWithContext(context -> {
+            assertThat(context.getNodes().size(), is(1));
+            assertThat(context.getRange(), equalTo(StringRange.between(0, 3)));
+            return false;
+        }));
+
+        final ParseResults<Object> parse = subject.parse("foo", source);
+        assertThat(parse.getReader().getCursor(), is(0));
+        assertThat(parse.getContext().getNodes(), is(empty()));
+    }
+
+    @Test
+    public void testParseContextImpermissibleArgument() throws Exception {
+        subject.register(literal("foo")
+            .then(argument("bar", integer())
+                .requiresWithContext(context -> {
+                    assertThat(context.getNodes().size(), is(2));
+                    assertThat(context.getArguments().size(), is(1));
+                    assertThat(context.getRange(), equalTo(StringRange.between(0, 5)));
+                    return false;
+                })
+            )
+        );
+
+        final ParseResults<Object> parse = subject.parse("foo 1", source);
+        assertThat(parse.getReader().getCursor(), is(4));
+        assertThat(parse.getContext().getNodes().size(), is(1));
     }
 
     @SuppressWarnings("unchecked")

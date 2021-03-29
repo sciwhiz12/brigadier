@@ -5,7 +5,6 @@ package com.mojang.brigadier.tree;
 
 import com.mojang.brigadier.AmbiguityConsumer;
 import com.mojang.brigadier.Command;
-import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.RedirectModifier;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -23,7 +22,7 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
     private Map<String, CommandNode<S>> children = new TreeMap<>();
     private Map<String, ArgumentCommandNode<S, ?>> arguments = new LinkedHashMap<>();
     private final Predicate<S> requirement;
-    private final Predicate<ParseResults<S>> contextRequirement;
+    private final Predicate<CommandContextBuilder<S>> contextRequirement;
     private final CommandNode<S> redirect;
     private final RedirectModifier<S> modifier;
     private final boolean forks;
@@ -33,13 +32,13 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
     protected CommandNode(final Command<S> command, final Predicate<S> requirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         this.command = command;
         this.requirement = requirement;
-        this.contextRequirement = parse -> true;
+        this.contextRequirement = context -> true;
         this.redirect = redirect;
         this.modifier = modifier;
         this.forks = forks;
     }
 
-    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final Predicate<ParseResults<S>> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final Predicate<CommandContextBuilder<S>> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         this.command = command;
         this.requirement = requirement;
         this.contextRequirement = contextRequirement;
@@ -72,8 +71,8 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
         return requirement.test(source);
     }
 
-    public boolean canUse(final ParseResults<S> parse) {
-        return contextRequirement.test(parse);
+    public boolean canUse(final CommandContextBuilder<S> context) {
+        return contextRequirement.test(context);
     }
 
     public void addChild(final CommandNode<S> node) {
@@ -154,10 +153,6 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
 
     public Predicate<S> getRequirement() {
         return requirement;
-    }
-
-    public Predicate<ParseResults<S>> getContextRequirement() {
-        return contextRequirement;
     }
 
     public abstract String getName();

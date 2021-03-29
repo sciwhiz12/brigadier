@@ -6,6 +6,7 @@ package com.mojang.brigadier;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.context.CommandContextBuilder;
+import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.context.SuggestionContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -601,6 +602,16 @@ public class CommandDispatcher<S> {
         int i = 0;
         for (final CommandNode<S> node : parent.getChildren()) {
             CompletableFuture<Suggestions> future = Suggestions.empty();
+            if (!node.canUse(context.getSource())) {
+                futures[i++] = future;
+                continue;
+            }
+            // We don't know the real range of the parsed contents; default to an empty range.
+            final CommandContextBuilder<S> nodeContext = context.copy().withNode(node, StringRange.at(start));
+            if (!node.canUse(nodeContext)) {
+                futures[i++] = future;
+                continue;
+            }
             try {
                 future = node.listSuggestions(context.build(truncatedInput), new SuggestionsBuilder(truncatedInput, start));
             } catch (final CommandSyntaxException ignored) {

@@ -8,6 +8,8 @@ import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +26,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CommandSuggestionsTest {
@@ -108,6 +111,34 @@ public class CommandSuggestionsTest {
 
         final Suggestions result = subject.getCompletionSuggestions(subject.parse("", source)).join();
 
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
+        assertThat(result.getList(), is(empty()));
+    }
+
+    @Test
+    public void getCompletionSuggestions_rootCommands_partial_impermissible() throws Exception {
+        subject.register(literal("foo").requires(source -> false));
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("f", source)).join();
+
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
+        assertThat(result.getList(), is(empty()));
+    }
+
+    @Test
+    public void getCompletionSuggestions_rootCommands_impermissibleContext() throws Exception {
+        subject.register(
+            literal("foo")
+                .requiresWithContext(context -> {
+                    assertThat(context.getRange(), equalTo(StringRange.at(0)));
+                    assertThat(context.getNodes().size(), is(1));
+                    return false;
+                })
+        );
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("", source)).join();
+
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
         assertThat(result.getList(), is(empty()));
     }
 
@@ -186,14 +217,78 @@ public class CommandSuggestionsTest {
     @Test
     public void getCompletionSuggestions_subCommands_impermissible() throws Exception {
         subject.register(
-                literal("parent")
-                        .then(literal("foo")
-                                .requires(source -> false))
+            literal("parent")
+                .then(literal("foo")
+                    .requires(source -> false)
+                )
         );
 
         final Suggestions result = subject.getCompletionSuggestions(subject.parse("parent ", source)).join();
 
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
         assertThat(result.getList(), is(empty()));
+    }
+
+    @Test
+    public void getCompletionSuggestions_subCommands_partial_impermissible() throws Exception {
+        subject.register(
+            literal("parent")
+                .then(literal("foo")
+                    .requires(source -> false)
+                )
+        );
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("parent f", source)).join();
+
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
+        assertThat(result.getList(), is(empty()));
+    }
+
+    @Test
+    public void getCompletionSuggestions_subCommands_impermissibleContext() throws Exception {
+        subject.register(
+            literal("parent")
+                .then(literal("foo")
+                    .requiresWithContext(context -> {
+                        assertThat(context.getRange(), equalTo(StringRange.between(0, 7)));
+                        assertThat(context.getNodes().size(), is(2));
+                        return false;
+                    })
+                )
+        );
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("parent ", source)).join();
+
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
+        assertThat(result.getList(), is(empty()));
+    }
+
+    @Test
+    public void getCompletionSuggestions_argument_impermissibleContext_with_no_argument() throws Exception {
+        final AtomicInteger checkCalls = new AtomicInteger();
+        subject.register(
+            literal("parent")
+                .then(argument("foo", integer())
+                    .requiresWithContext(context -> {
+                        if (checkCalls.getAndIncrement() == 0) {
+                            return false; // called by #parse with arguments
+                        }
+                        assertThat(context.getArguments().isEmpty(), is(true));
+                        assertThat(context.getRange(), equalTo(StringRange.between(0, 7)));
+                        return false;
+                    })
+                    .suggests((context, builder) -> {
+                        fail();
+                        return null;
+                    })
+                )
+        );
+
+        final Suggestions result = subject.getCompletionSuggestions(subject.parse("parent 123", source)).join();
+
+        assertThat(result.getRange(), equalTo(StringRange.at(0)));
+        assertThat(result.getList(), is(empty()));
+        assertThat(checkCalls.get(), is(2));
     }
 
     @Test

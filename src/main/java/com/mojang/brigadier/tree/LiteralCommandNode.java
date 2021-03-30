@@ -4,6 +4,7 @@
 package com.mojang.brigadier.tree;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.ImmutableStringReader;
 import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.RedirectModifier;
 import com.mojang.brigadier.StringReader;
@@ -18,6 +19,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public class LiteralCommandNode<S> extends CommandNode<S> {
@@ -28,7 +30,7 @@ public class LiteralCommandNode<S> extends CommandNode<S> {
         this.literal = literal;
     }
 
-    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final Predicate<ParseResults<S>> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         super(command, requirement, contextRequirement, redirect, modifier, forks);
         this.literal = literal;
     }

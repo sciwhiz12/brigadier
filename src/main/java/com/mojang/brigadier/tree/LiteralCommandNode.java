@@ -17,6 +17,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -24,13 +25,13 @@ import java.util.function.Predicate;
 public class LiteralCommandNode<S> extends CommandNode<S> {
     private final String literal;
 
-    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
-        super(command, requirement, redirect, modifier, forks);
+    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final Map<String, String> metaInfo, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+        super(command, requirement, metaInfo, redirect, modifier, forks);
         this.literal = literal;
     }
 
-    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
-        super(command, requirement, contextRequirement, redirect, modifier, forks);
+    public LiteralCommandNode(final String literal, final Command<S> command, final Predicate<S> requirement, final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement, final Map<String, String> metaInfo, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+        super(command, requirement, contextRequirement, metaInfo, redirect, modifier, forks);
         this.literal = literal;
     }
 

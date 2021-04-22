@@ -25,25 +25,28 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
     private final Map<String, ArgumentCommandNode<S, ?>> arguments = new LinkedHashMap<>();
     private final Predicate<S> requirement;
     private final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement;
+    private final Map<String, String> metaInfo;
     private final CommandNode<S> redirect;
     private final RedirectModifier<S> modifier;
     private final boolean forks;
     private Command<S> command;
     private boolean hasLiterals = false;
 
-    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final Map<String, String> metaInfo, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         this.command = command;
         this.requirement = requirement;
         this.contextRequirement = (context, reader) -> true;
+        this.metaInfo = metaInfo.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new HashMap<>(metaInfo));
         this.redirect = redirect;
         this.modifier = modifier;
         this.forks = forks;
     }
 
-    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement, final Map<String, String> metaInfo, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         this.command = command;
         this.requirement = requirement;
         this.contextRequirement = contextRequirement;
+        this.metaInfo = metaInfo.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new HashMap<>(metaInfo));
         this.redirect = redirect;
         this.modifier = modifier;
         this.forks = forks;
@@ -75,6 +78,10 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
 
     public boolean canUse(final CommandContextBuilder<S> context, final ImmutableStringReader reader) {
         return contextRequirement.test(context, reader);
+    }
+
+    public Map<String, String> getMetaInfo() {
+        return metaInfo;
     }
 
     public void addChild(final CommandNode<S> node) {

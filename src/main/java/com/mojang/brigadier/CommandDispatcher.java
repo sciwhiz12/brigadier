@@ -6,6 +6,7 @@ package com.mojang.brigadier;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.context.CommandContextBuilder;
+import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.context.SuggestionContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -13,7 +14,6 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -387,8 +387,10 @@ public class CommandDispatcher<S> {
                     final CommandContextBuilder<S> childContext = new CommandContextBuilder<>(this, source, child.getRedirect(), reader.getCursor());
                     final ParseResults<S> parse = parseNodes(child.getRedirect(), reader, childContext);
                     context.withChild(parse.getContext());
-                    return new ParseResults<>(context, parse.getReader(), parse.getExceptions());
-                } else {
+                    if (child.canUse(context, parse.getReader())) {
+                        return new ParseResults<>(context, parse.getReader(), parse.getExceptions());
+                    }
+                } else if (child.canUse(context, reader)) {
                     final ParseResults<S> parse = parseNodes(child, reader, context);
                     if (potentials == null) {
                         potentials = new ArrayList<>(1);
@@ -396,10 +398,18 @@ public class CommandDispatcher<S> {
                     potentials.add(parse);
                 }
             } else {
+                final CommandNode<S> redirect = child.getRedirect();
+                if (redirect != null && redirect.getCommand() != null) {
+                    context.withCommand(redirect.getCommand());
+                }
+                if (!child.canUse(context, reader)) {
+                    continue;
+                }
+                final ParseResults<S> parse = new ParseResults<>(context, reader, Collections.emptyMap());
                 if (potentials == null) {
                     potentials = new ArrayList<>(1);
                 }
-                potentials.add(new ParseResults<>(context, reader, Collections.emptyMap()));
+                potentials.add(parse);
             }
         }
 
@@ -594,6 +604,18 @@ public class CommandDispatcher<S> {
         int i = 0;
         for (final CommandNode<S> node : parent.getChildren()) {
             CompletableFuture<Suggestions> future = Suggestions.empty();
+            if (!node.canUse(context.getSource())) {
+                futures[i++] = future;
+                continue;
+            }
+            // We don't know the real range of the parsed contents; default to an empty range.
+            final CommandContextBuilder<S> nodeContext = context.copy().withNode(node, StringRange.at(start));
+            final StringReader reader = new StringReader(truncatedInput);
+            reader.setCursor(start);
+            if (!node.canUse(nodeContext, reader)) {
+                futures[i++] = future;
+                continue;
+            }
             try {
                 future = node.listSuggestions(context.build(truncatedInput), new SuggestionsBuilder(truncatedInput, truncatedInputLowerCase, start));
             } catch (final CommandSyntaxException ignored) {

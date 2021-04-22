@@ -5,6 +5,7 @@ package com.mojang.brigadier.tree;
 
 import com.mojang.brigadier.AmbiguityConsumer;
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.ImmutableStringReader;
 import com.mojang.brigadier.RedirectModifier;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -14,28 +15,35 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
     private final Map<String, CommandNode<S>> children = new LinkedHashMap<>();
-    private final Map<String, LiteralCommandNode<S>> literals = new LinkedHashMap<>();
     private final Map<String, ArgumentCommandNode<S, ?>> arguments = new LinkedHashMap<>();
     private final Predicate<S> requirement;
+    private final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement;
     private final CommandNode<S> redirect;
     private final RedirectModifier<S> modifier;
     private final boolean forks;
     private Command<S> command;
+    private boolean hasLiterals = false;
 
     protected CommandNode(final Command<S> command, final Predicate<S> requirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
         this.command = command;
         this.requirement = requirement;
+        this.contextRequirement = (context, reader) -> true;
+        this.redirect = redirect;
+        this.modifier = modifier;
+        this.forks = forks;
+    }
+
+    protected CommandNode(final Command<S> command, final Predicate<S> requirement, final BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement, final CommandNode<S> redirect, final RedirectModifier<S> modifier, final boolean forks) {
+        this.command = command;
+        this.requirement = requirement;
+        this.contextRequirement = contextRequirement;
         this.redirect = redirect;
         this.modifier = modifier;
         this.forks = forks;
@@ -65,6 +73,10 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
         return requirement.test(source);
     }
 
+    public boolean canUse(final CommandContextBuilder<S> context, final ImmutableStringReader reader) {
+        return contextRequirement.test(context, reader);
+    }
+
     public void addChild(final CommandNode<S> node) {
         if (node instanceof RootCommandNode) {
             throw new UnsupportedOperationException("Cannot add a RootCommandNode as a child to any other CommandNode");
@@ -82,10 +94,17 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
         } else {
             children.put(node.getName(), node);
             if (node instanceof LiteralCommandNode) {
-                literals.put(node.getName(), (LiteralCommandNode<S>) node);
+                hasLiterals = true;
             } else if (node instanceof ArgumentCommandNode) {
                 arguments.put(node.getName(), (ArgumentCommandNode<S, ?>) node);
             }
+        }
+    }
+
+    public void removeChildByName(final String name) {
+        final CommandNode<S> child = children.remove(name);
+        if (child != null) {
+            arguments.remove(name);
         }
     }
 
@@ -138,6 +157,10 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
         return requirement;
     }
 
+    public BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> getContextRequirement() {
+        return contextRequirement;
+    }
+
     public abstract String getName();
 
     public abstract String getUsageText();
@@ -151,16 +174,16 @@ public abstract class CommandNode<S> implements Comparable<CommandNode<S>> {
     protected abstract String getSortedKey();
 
     public Collection<? extends CommandNode<S>> getRelevantNodes(final StringReader input) {
-        if (literals.size() > 0) {
+        if (hasLiterals) {
             final int cursor = input.getCursor();
             while (input.canRead() && input.peek() != ' ') {
                 input.skip();
             }
             final String text = input.getString().substring(cursor, input.getCursor());
             input.setCursor(cursor);
-            final LiteralCommandNode<S> literal = literals.get(text);
-            if (literal != null) {
-                return Collections.singleton(literal);
+            final CommandNode<S> node = children.get(text);
+            if (node instanceof LiteralCommandNode<?>) {
+                return Collections.singleton(node);
             } else {
                 return arguments.values();
             }

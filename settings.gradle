@@ -1,2 +1,2 @@
-rootProject.name = 'velocity-brigadier'
+rootProject.name = 'janitor-brigadier'
 enableFeaturePreview('STABLE_PUBLISHING')

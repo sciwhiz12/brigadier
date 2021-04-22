@@ -13,6 +13,7 @@ import com.mojang.brigadier.tree.RootCommandNode;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -22,7 +23,7 @@ public abstract class ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> {
     private Command<S> command;
     private Predicate<S> requirement = s -> true;
     private BiPredicate<CommandContextBuilder<S>, ImmutableStringReader> contextRequirement = (context, reader) -> true;
-    private Map<String, String> metaInfo;
+    private Map<String, String> metaInfo = new HashMap<>();
     private CommandNode<S> target;
     private RedirectModifier<S> modifier = null;
     private boolean forks;
